@@ -5,6 +5,6 @@
 ## dependencies
 
 - chromium
-- gcc или clang
+- gcc or clang
 - GNU make
 - coreutils
