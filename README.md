@@ -9,3 +9,13 @@
 - gcc or clang
 - GNU make
 - coreutils
+
+## instaling dependencies 
+sudo apt update
+sudo apt install build-essential pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev
+
+## Building PixelForge 
+make
+
+## instaling PixelForge
+make install
