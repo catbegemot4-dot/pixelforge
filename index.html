@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8"><title>PixelForge</title>
+<style>
+:root{--bg:#1e1e1e;--p:#2b2b2b;--p2:#383838;--ac:#2d8ceb;color-scheme:dark}
+*{box-sizing:border-box;user-select:none}
+html,body{height:100%;margin:0;background:var(--bg);color:#ddd;font:12px "Source Sans 3","Segoe UI",system-ui,sans-serif;overflow:hidden}
+#app{display:grid;height:100%;grid-template:28px 38px 1fr 22px/46px 1fr 270px}
+#menu,#opt,#status{grid-column:1/-1;background:var(--p);display:flex;align-items:center}
+#menu{border-bottom:1px solid #111}#opt{border-bottom:1px solid #111;gap:18px;padding:0 12px;background:#323232}
+#status{padding:0 12px;border-top:1px solid #111;color:#999}
+.m{position:relative;padding:7px 12px}.m:hover{background:var(--p2)}
+.m>div{display:none;position:absolute;top:100%;left:0;background:var(--p2);border:1px solid #000;min-width:240px;z-index:9999;padding:3px 0}
+.m:hover>div{display:block}.m a{display:flex;justify-content:space-between;padding:5px 14px;gap:24px}
+.m a:hover,button:hover{background:var(--ac);color:#fff}.m i{color:#999;font-style:normal}
+#tools{background:var(--p);border-right:1px solid #111;display:flex;flex-direction:column;align-items:center;padding-top:6px;gap:3px}
+#tools button{width:34px;height:34px;font-size:18px;padding:0}
+button{background:transparent;border:0;color:#ddd;border-radius:2px;cursor:pointer;font:inherit}
+button.on{background:#505050;box-shadow:inset 0 0 0 1px var(--ac)}
+#cols{position:relative;width:34px;height:40px;margin-top:14px}
+#cols input{position:absolute;width:24px;height:24px;border:1px solid #000;padding:0;background:none}
+#bgc{right:0;bottom:0}#fgc{left:0;top:0;z-index:1}
+#ws{overflow:auto;display:flex;background:#161616;padding:24px}
+#stage{margin:auto;position:relative;flex:none;isolation:isolate;box-shadow:0 0 0 1px #000,0 8px 24px #0009;background:repeating-conic-gradient(#bbb 0 25%,#fff 0 50%) 0 0/16px 16px}
+#stage.px canvas{image-rendering:pixelated}
+#ov{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+#side{background:var(--p);border-left:1px solid #111;display:flex;flex-direction:column;overflow:hidden}
+.h{padding:6px 10px;background:#232323;border-top:1px solid #111;font-weight:600}
+#sw{display:flex;flex-wrap:wrap;gap:4px;padding:8px 10px}#sw i{width:20px;height:20px;border:1px solid #000;cursor:pointer}
+#hl{flex:1;overflow:auto;min-height:70px}#hl div,.ly{padding:4px 10px;cursor:pointer}
+#hl div:hover,.ly:hover{background:#3a3a3a}#hl .on,.ly.on{background:#3b5675}
+.lo{display:flex;gap:10px;padding:6px 10px;align-items:center}
+#layers{flex:1.5;overflow:auto}.ly{display:flex;align-items:center;gap:8px;border-bottom:1px solid #222}
+.ly canvas{background:repeating-conic-gradient(#999 0 25%,#ddd 0 50%) 0 0/8px 8px;border:1px solid #000}
+.eye{width:14px;text-align:center}.lb{display:flex;gap:4px;padding:4px 8px;border-top:1px solid #111}.lb button{flex:1;height:26px;background:#3a3a3a}
+select,input[type=range]{background:#444;color:#ddd;border:1px solid #222;font:inherit}input[type=range]{padding:0;height:14px;vertical-align:middle}
+#opt label{display:flex;gap:6px;align-items:center}
+</style></head><body>
+<div id="app">
+<div id="menu"></div>
+<div id="opt"><b id="tn" style="min-width:140px"></b>
+<label data-o="brush eraser text shape">Размер <input id="sz" type="range" min="1" max="200" value="20" oninput="this.nextElementSibling.value=this.value"><output>20</output></label>
+<label data-o="brush eraser">Жёсткость <input id="hd" type="range" min="0" max="100" value="70"></label>
+<label data-o="brush eraser">Непрозрачность <input id="op" type="range" min="1" max="100" value="100"></label>
+<label data-o="bucket">Допуск <input id="tol" type="range" min="0" max="255" value="32"></label>
+<span data-o="shape"><select id="shp"><option value="line">Линия<option value="rect">Прямоугольник<option value="ell">Эллипс</select> <label style="display:inline-flex"><input type="checkbox" id="fl" checked>Заливка</label></span></div>
+<div id="tools"><div id="cols"><input type="color" id="bgc" value="#ffffff"><input type="color" id="fgc" value="#000000"></div></div>
+<div id="ws"><div id="stage"><canvas id="ov"></canvas></div></div>
+<div id="side">
+<div class="h">Образцы</div><div id="sw"></div>
+<div class="h">История</div><div id="hl"></div>
+<div class="h">Слои</div>
+<div class="lo"><select id="bm"><option value="normal">Обычный<option value="multiply">Умножение<option value="screen">Экран<option value="overlay">Перекрытие<option value="darken">Затемнение<option value="lighten">Замена светлым<option value="color-dodge">Осветление основы<option value="color-burn">Затемнение основы<option value="difference">Разница</select>
+<label>Непрозр. <input id="lop" type="range" min="0" max="100" value="100"></label></div>
+<div id="layers"></div>
+<div class="lb"><button data-c="nl" title="Новый слой">＋</button><button data-c="dup" title="Дублировать">⧉</button><button data-c="up" title="Выше">▲</button><button data-c="down" title="Ниже">▼</button><button data-c="del" title="Удалить">🗑</button></div>
+</div>
+<div id="status"><span id="st"></span></div>
+</div>
+<input type="file" id="file" accept="image/*" hidden>
+<script>
+const $=s=>document.querySelector(s),E=(t,p={},...k)=>Object.assign(document.createElement(t),p,k.length?{}:0);
+let W=800,H=600,Z=1,L=[],cur=0,tool='brush',fg='#000000',bg='#ffffff',sel=null,hist=[],hi=-1,uid=0,d=null;
+const stage=$('#stage'),ov=$('#ov'),octx=ov.getContext('2d');
+const rgbA=h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16)),hex=c=>'#'+[...c].slice(0,3).map(v=>v.toString(16).padStart(2,'0')).join('');
+const mk=name=>{const cv=E('canvas',{width:W,height:H});cv.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none';stage.insertBefore(cv,ov);return{name,cv,c:cv.getContext('2d',{willReadFrequently:true}),vis:1,op:100,bm:'normal'}};
+const clip=c=>{if(sel){c.beginPath();c.rect(sel.x,sel.y,sel.w,sel.h);c.clip()}};
+function layout(){stage.style.width=W*Z+'px';stage.style.height=H*Z+'px';stage.classList.toggle('px',Z>=2);
+ L.forEach((l,i)=>{const s=l.cv.style;s.zIndex=i;s.display=l.vis?'':'none';s.opacity=l.op/100;s.mixBlendMode=l.bm});ov.style.zIndex=999;ovr()}
+const zoom=f=>{Z=Math.max(.1,Math.min(16,Z*f));layout()};
+function flat(){const c=E('canvas',{width:W,height:H}),x=c.getContext('2d');L.forEach(l=>{if(!l.vis)return;x.globalAlpha=l.op/100;x.globalCompositeOperation=l.bm=='normal'?'source-over':l.bm;x.drawImage(l.cv,0,0)});return c}
+// история: полные снимки документа
+const snap=()=>({w:W,h:H,cur,L:L.map(l=>({name:l.name,vis:l.vis,op:l.op,bm:l.bm,d:l.c.getImageData(0,0,W,H)}))});
+function done(n){hist.length=hi+1;hist.push({n,s:snap()});if(hist.length>40)hist.shift();hi=hist.length-1;panels()}
+function restore(i){hi=i;const s=hist[i].s;W=s.w;H=s.h;L.forEach(l=>l.cv.remove());ov.width=W;ov.height=H;
+ L=s.L.map(x=>{const l=mk(x.name);Object.assign(l,{vis:x.vis,op:x.op,bm:x.bm});l.c.putImageData(x.d,0,0);return l});cur=Math.min(s.cur,L.length-1);layout();panels()}
+function init(w,h,img){L.forEach(l=>l.cv.remove());W=w;H=h;ov.width=w;ov.height=h;sel=null;hist=[];hi=-1;const l=mk('Фон');
+ l.c.fillStyle='#fff';img?l.c.drawImage(img,0,0):l.c.fillRect(0,0,w,h);L=[l];cur=0;layout();done('Новый документ')}
+function panels(){const ll=$('#layers');ll.innerHTML='';
+ for(let i=L.length-1;i>=0;i--){const l=L[i],r=E('div',{className:'ly'+(i==cur?' on':''),onclick:()=>{cur=i;panels()}}),th=E('canvas',{width:36,height:28});
+  th.getContext('2d').drawImage(l.cv,0,0,36,28);
+  r.append(E('b',{className:'eye',textContent:l.vis?'●':'○',onclick:e=>{e.stopPropagation();l.vis=!l.vis;layout();panels()}}),th,E('span',{textContent:l.name}));ll.append(r)}
+ $('#bm').value=L[cur].bm;$('#lop').value=L[cur].op;
+ $('#hl').replaceChildren(...hist.map((h,i)=>E('div',{className:i==hi?'on':'',textContent:h.n,onclick:()=>restore(i)})));$('#hl .on')?.scrollIntoView({block:'nearest'})}
+$('#bm').onchange=e=>{L[cur].bm=e.target.value;layout();done('Режим наложения')};
+$('#lop').oninput=e=>{L[cur].op=+e.target.value;layout()};$('#lop').onchange=()=>done('Непрозрачность слоя');
+// кисть, заливка, фигуры
+function dab(c,x,y){const r=$('#sz').value/2,h=Math.min($('#hd').value/100,.98),a=$('#op').value/100,col=tool=='eraser'?'0,0,0':rgbA(fg).join(','),
+ g=c.createRadialGradient(x,y,r*h,x,y,r);g.addColorStop(0,`rgba(${col},${a})`);g.addColorStop(1,`rgba(${col},0)`);
+ c.globalCompositeOperation=tool=='eraser'?'destination-out':'source-over';c.fillStyle=g;c.beginPath();c.arc(x,y,r,0,7);c.fill()}
+function fill(l,[px,py]){px|=0;py|=0;const id=l.c.getImageData(0,0,W,H),D=id.data,i0=(py*W+px)*4,t=+$('#tol').value,[r,g,b]=rgbA(fg),T=D.slice(i0,i0+4),seen=new Uint8Array(W*H),st=[px,py];
+ const ok=i=>{for(let k=0;k<4;k++)if(Math.abs(D[i+k]-T[k])>t)return 0;return 1};
+ while(st.length){const y=st.pop(),x=st.pop();if(x<0||y<0||x>=W||y>=H)continue;const n=y*W+x;if(seen[n])continue;seen[n]=1;const i=n*4;
+  if(!ok(i)||(sel&&(x<sel.x||y<sel.y||x>=sel.x+sel.w||y>=sel.y+sel.h)))continue;D[i]=r;D[i+1]=g;D[i+2]=b;D[i+3]=255;st.push(x+1,y,x-1,y,x,y+1,x,y-1)}
+ l.c.putImageData(id,0,0)}
+function shape(c,a,b){c.save();c.strokeStyle=c.fillStyle=fg;c.lineWidth=$('#sz').value;c.lineCap='round';c.beginPath();const k=$('#shp').value;
+ if(k=='line'){c.moveTo(...a);c.lineTo(...b)}else if(k=='rect')c.rect(a[0],a[1],b[0]-a[0],b[1]-a[1]);
+ else c.ellipse((a[0]+b[0])/2,(a[1]+b[1])/2,Math.abs(b[0]-a[0])/2,Math.abs(b[1]-a[1])/2,0,0,7);
+ k!='line'&&$('#fl').checked?c.fill():c.stroke();c.restore()}
+function ovr(p){octx.clearRect(0,0,W,H);if(sel){octx.save();octx.lineWidth=1/Z;octx.setLineDash([4/Z,4/Z]);octx.strokeStyle='#000';octx.strokeRect(sel.x,sel.y,sel.w,sel.h);octx.lineDashOffset=4/Z;octx.strokeStyle='#fff';octx.strokeRect(sel.x,sel.y,sel.w,sel.h);octx.restore()}if(p)shape(octx,...p)}
+// мышь
+const pos=e=>{const r=ov.getBoundingClientRect();return[(e.clientX-r.left)/Z,(e.clientY-r.top)/Z]};
+ov.onpointerdown=e=>{if(e.button)return;const p=pos(e),l=L[cur];ov.setPointerCapture(e.pointerId);d={s:p,p};
+ if(tool=='brush'||tool=='eraser'){l.c.save();clip(l.c);dab(l.c,...p)}
+ else if(tool=='bucket'){fill(l,p);done('Заливка')}
+ else if(tool=='eye'){setFg(hex(flat().getContext('2d').getImageData(p[0]|0,p[1]|0,1,1).data))}
+ else if(tool=='text'){const t=prompt('Текст:');if(t){l.c.save();clip(l.c);l.c.fillStyle=fg;l.c.font=`${$('#sz').value*2}px sans-serif`;l.c.textBaseline='top';l.c.fillText(t,...p);l.c.restore();done('Текст')}d=null}
+ else if(tool=='zoom'){zoom(e.altKey?.5:2);d=null}
+ else if(tool=='move'){d.copy=E('canvas',{width:W,height:H});d.copy.getContext('2d').drawImage(l.cv,0,0)}
+ else if(tool=='marquee'){sel=null;ovr()}};
+ov.onpointermove=e=>{const p=pos(e),[x,y]=p;$('#st').textContent=`${x|0}, ${y|0} px    ${Math.round(Z*100)}%    ${W}×${H}`;if(!d)return;const l=L[cur];
+ if(tool=='brush'||tool=='eraser'){const step=Math.max(1,$('#sz').value*.15);let[ax,ay]=d.p,dist=Math.hypot(x-ax,y-ay);
+  while(dist>=step){const t=step/dist;ax+=(x-ax)*t;ay+=(y-ay)*t;dab(l.c,ax,ay);dist=Math.hypot(x-ax,y-ay)}d.p=[ax,ay]}
+ else if(tool=='move'){l.c.clearRect(0,0,W,H);l.c.drawImage(d.copy,x-d.s[0],y-d.s[1])}
+ else if(tool=='marquee'){const a=d.s.map(Math.round),b=p.map(Math.round),sx=Math.max(0,Math.min(a[0],b[0])),sy=Math.max(0,Math.min(a[1],b[1]));
+  sel={x:sx,y:sy,w:Math.min(W,Math.max(a[0],b[0]))-sx,h:Math.min(H,Math.max(a[1],b[1]))-sy};ovr()}
+ else if(tool=='shape')ovr([d.s,p])};
+ov.onpointerup=e=>{if(!d)return;const l=L[cur];
+ if(tool=='brush'||tool=='eraser'){l.c.restore();done(tool=='brush'?'Кисть':'Ластик')}
+ else if(tool=='move')done('Перемещение');
+ else if(tool=='marquee'){if(sel&&(sel.w<2||sel.h<2))sel=null;ovr()}
+ else if(tool=='shape'){l.c.save();clip(l.c);shape(l.c,d.s,pos(e));l.c.restore();ovr();done('Фигура')}
+ d=null};
+$('#ws').onwheel=e=>{if(e.ctrlKey){e.preventDefault();zoom(e.deltaY<0?1.1:.9)}};
+// команды
+const px=(n,f)=>{const l=L[cur],s=sel||{x:0,y:0,w:W,h:H},id=l.c.getImageData(s.x,s.y,s.w,s.h),D=id.data;
+ for(let i=0;i<D.length;i+=4){const o=f(D[i],D[i+1],D[i+2]);D[i]=o[0];D[i+1]=o[1];D[i+2]=o[2]}l.c.putImageData(id,s.x,s.y);done(n)};
+const flip=h=>{L.forEach(l=>{const t=E('canvas',{width:W,height:H});t.getContext('2d').drawImage(l.cv,0,0);l.c.save();l.c.clearRect(0,0,W,H);
+ l.c.scale(h?-1:1,h?1:-1);l.c.drawImage(t,h?-W:0,h?0:-H);l.c.restore()});done('Отражение')};
+const C={
+ new:()=>{const v=prompt('Размер, px (ширина x высота):','800x600');if(!v)return;const[w,h]=v.split(/[x×,\s]+/).map(Number);if(w>0&&h>0&&w*h<3e7)init(w,h)},
+ open:()=>$('#file').click(),
+ save:()=>flat().toBlob(b=>E('a',{href:URL.createObjectURL(b),download:'image.png'}).click()),
+ undo:()=>hi>0&&restore(hi-1),redo:()=>hi<hist.length-1&&restore(hi+1),
+ all:()=>{sel={x:0,y:0,w:W,h:H};ovr()},desel:()=>{sel=null;ovr()},
+ fillfg:()=>{const l=L[cur];l.c.save();clip(l.c);l.c.fillStyle=fg;l.c.fillRect(0,0,W,H);l.c.restore();done('Заливка цветом')},
+ clear:()=>{const l=L[cur];l.c.save();clip(l.c);l.c.clearRect(0,0,W,H);l.c.restore();done('Очистка')},
+ zin:()=>zoom(1.25),zout:()=>zoom(.8),z100:()=>{Z=1;layout()},fh:()=>flip(1),fv:()=>flip(0),
+ inv:()=>px('Инверсия',(r,g,b)=>[255-r,255-g,255-b]),
+ gray:()=>px('Чёрно-белое',(r,g,b)=>{const y=.3*r+.59*g+.11*b;return[y,y,y]}),
+ sep:()=>px('Сепия',(r,g,b)=>[.393*r+.769*g+.189*b,.349*r+.686*g+.168*b,.272*r+.534*g+.131*b]),
+ br:()=>px('Яркость',(r,g,b)=>[r+25,g+25,b+25]),
+ blur:()=>{const l=L[cur],t=E('canvas',{width:W,height:H});t.getContext('2d').drawImage(l.cv,0,0);l.c.save();clip(l.c);l.c.filter='blur(3px)';l.c.clearRect(0,0,W,H);l.c.drawImage(t,0,0);l.c.restore();done('Размытие')},
+ nl:()=>{L.splice(cur+1,0,mk('Слой '+(++uid)));cur++;layout();done('Новый слой')},
+ dup:()=>{const a=L[cur],b=mk(a.name+' копия');b.c.drawImage(a.cv,0,0);b.op=a.op;b.bm=a.bm;L.splice(cur+1,0,b);cur++;layout();done('Дубликат слоя')},
+ del:()=>{if(L.length<2)return;L[cur].cv.remove();L.splice(cur,1);cur=Math.max(0,cur-1);layout();done('Удаление слоя')},
+ up:()=>{if(cur<L.length-1){[L[cur],L[cur+1]]=[L[cur+1],L[cur]];cur++;layout();done('Порядок слоёв')}},
+ down:()=>{if(cur>0){[L[cur],L[cur-1]]=[L[cur-1],L[cur]];cur--;layout();done('Порядок слоёв')}},
+ merge:()=>{if(!cur)return;const a=L[cur],b=L[cur-1];b.c.save();b.c.globalAlpha=a.op/100;b.c.globalCompositeOperation=a.bm=='normal'?'source-over':a.bm;b.c.drawImage(a.cv,0,0);b.c.restore();a.cv.remove();L.splice(cur,1);cur--;layout();done('Слияние слоёв')}};
+const M={'Файл':[['Новый…','new','Ctrl+N'],['Открыть…','open','Ctrl+O'],['Сохранить как PNG','save','Ctrl+S']],
+ 'Правка':[['Отменить','undo','Ctrl+Z'],['Повторить','redo','Ctrl+Y'],['Залить цветом переднего плана','fillfg'],['Очистить','clear','Del']],
+ 'Изображение':[['Отразить по горизонтали','fh'],['Отразить по вертикали','fv']],
+ 'Слой':[['Новый слой','nl'],['Дублировать слой','dup'],['Удалить слой','del'],['Выше','up'],['Ниже','down'],['Объединить с нижним','merge']],
+ 'Выделение':[['Все','all','Ctrl+A'],['Снять выделение','desel','Ctrl+D']],
+ 'Фильтр':[['Инвертировать','inv'],['Чёрно-белое','gray'],['Сепия','sep'],['Ярче','br'],['Размытие','blur']],
+ 'Просмотр':[['Увеличить','zin'],['Уменьшить','zout'],['100%','z100']]};
+$('#menu').innerHTML=Object.entries(M).map(([k,v])=>`<div class="m">${k}<div>${v.map(([n,c,s])=>`<a data-c="${c}">${n}<i>${s||''}</i></a>`).join('')}</div></div>`).join('');
+document.addEventListener('click',e=>{const c=e.target.closest('[data-c]');if(c)C[c.dataset.c]()});
+// инструменты
+const TL=[['move','v','✥','Перемещение'],['marquee','m','⬚','Прямоугольное выделение'],['brush','b','✎','Кисть'],['eraser','e','⌫','Ластик'],['bucket','g','◧','Заливка'],['eye','i','⌖','Пипетка'],['shape','u','▭','Фигура'],['text','t','T','Текст'],['zoom','z','⌕','Масштаб (Alt — уменьшить)']],TK={};
+TL.forEach(([id,k,ic,n])=>{TK[k]=id;$('#tools').insertBefore(E('button',{textContent:ic,title:`${n} (${k.toUpperCase()})`,onclick:()=>pick(id)}),$('#cols')).dataset.t=id});
+function pick(t){tool=t;document.querySelectorAll('#tools button').forEach(b=>b.classList.toggle('on',b.dataset.t==t));
+ document.querySelectorAll('[data-o]').forEach(e=>e.style.display=e.dataset.o.split(' ').includes(t)?'':'none');$('#tn').textContent=TL.find(x=>x[0]==t)[3]}
+const setFg=v=>{fg=v;$('#fgc').value=v},setBg=v=>{bg=v;$('#bgc').value=v};
+$('#fgc').oninput=e=>fg=e.target.value;$('#bgc').oninput=e=>bg=e.target.value;
+['#000000','#ffffff','#e53935','#fb8c00','#fdd835','#43a047','#00acc1','#1e66f5','#8e24aa','#ec407a','#757575','#8d6e63'].forEach(c=>$('#sw').append(E('i',{style:`background:${c}`,title:'Клик — основной, правый клик — фон',onclick:()=>setFg(c),oncontextmenu:e=>{e.preventDefault();setBg(c)}})));
+onkeydown=e=>{const k=e.key.toLowerCase();
+ if(e.ctrlKey||e.metaKey){const m={z:e.shiftKey?'redo':'undo',y:'redo',n:'new',o:'open',s:'save',a:'all',d:'desel'}[k];if(m){e.preventDefault();C[m]()}return}
+ if(k=='delete')C.clear();else if(k=='x'){const t=fg;setFg(bg);setBg(t)}else if(k=='d'){setFg('#000000');setBg('#ffffff')}else if(TK[k])pick(TK[k])};
+$('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;const im=new Image();im.onload=()=>init(im.width,im.height,im);im.src=URL.createObjectURL(f);e.target.value=''};
+pick('brush');init(800,600);
+</script></body></html>

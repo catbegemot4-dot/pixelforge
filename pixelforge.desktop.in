@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=PixelForge
+Comment=Растровый графический редактор
+Exec=@PREFIX@/bin/pixelforge
+Icon=pixelforge
+Terminal=false
+Categories=Graphics;RasterGraphics;2DGraphics;
