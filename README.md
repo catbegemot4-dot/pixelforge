@@ -11,10 +11,16 @@
 - coreutils
 
 ## instaling dependencies 
+```bash
 sudo apt install build-essential pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev
+```
 
 ## Building PixelForge 
+```bash
 make
+```
 
 ## instaling PixelForge
+```bash
 make install
+```
